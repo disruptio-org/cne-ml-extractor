@@ -35,3 +35,11 @@ def test_directory_traversal_is_rejected(http_server):
     response = conn.getresponse()
     assert response.status == HTTPStatus.NOT_FOUND
     conn.close()
+
+
+def test_repository_file_is_not_exposed(http_server):
+    conn = HTTPConnection("127.0.0.1", http_server.server_port)
+    conn.request("GET", "/../../README.md")
+    response = conn.getresponse()
+    assert response.status == HTTPStatus.NOT_FOUND
+    conn.close()
