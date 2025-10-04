@@ -68,9 +68,16 @@ def process_pdf_to_csv(pdf_path: str, dtmnfr: str, out_csv: str,
             # candidato
             if lbl == "CANDIDATO" and prob >= 0.55 and current_sigla:
                 nome = ml.extract_nome(line)
+                m = LINE_NUM.match(line)
+                if m:
+                    if not nome:
+                        nome = m.group(2)
+                    else:
+                        nome_match = LINE_NUM.match(nome)
+                        if nome_match:
+                            nome = nome_match.group(2)
                 if not nome:
-                    m = LINE_NUM.match(line)
-                    nome = m.group(2) if m else line
+                    nome = line
                 if in_section is None:
                     in_section = "EFETIVOS"; seq_in_list = 0
                 seq_in_list += 1

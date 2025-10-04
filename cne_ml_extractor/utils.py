@@ -13,7 +13,7 @@ def pdf_to_lines(pdf_path: str) -> list[list[str]]:
 
 SEC_EFETIVOS  = re.compile(r"CANDIDAT[OA]S?\s+EFETIV[OA]S", re.I)
 SEC_SUPLENTES = re.compile(r"CANDIDAT[OA]S?\s+SUPLENTES",   re.I)
-LINE_NUM      = re.compile(r"^\s*(\d+)[\.\-ºo]?\s+(.+?)\s*$")
+LINE_NUM      = re.compile(r"^\s*(\d+)(?:[\.\-ºo]{0,3})\s+(.+?)\s*$")
 
 _SIGLA_TOKEN = r"[A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9]{2,}"
 _SIGLA_PART = rf"{_SIGLA_TOKEN}(?:[/-]{_SIGLA_TOKEN})*"
