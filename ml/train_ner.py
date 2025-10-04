@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os, random
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict
 
 DATA = './data/ner/all.conll'
 OUT  = './models/ner-nome-xlmr'
@@ -51,7 +51,10 @@ def main():
             input_ids.append(enc['input_ids']); attn.append(enc['attention_mask']); lab.append(y)
         return {'input_ids': input_ids, 'attention_mask': attn, 'labels': lab}
 
-    ds = DatasetDict(train=train, validation=dev).map(to_features, batched=True)
+    ds = DatasetDict(
+        train=Dataset.from_dict(train),
+        validation=Dataset.from_dict(dev),
+    ).map(to_features, batched=True)
 
     m = AutoModelForTokenClassification.from_pretrained('xlm-roberta-base', num_labels=len(labels), id2label=id2label, label2id=label2id)
     args = TrainingArguments(output_dir=OUT, per_device_train_batch_size=8, per_device_eval_batch_size=8, learning_rate=3e-5,
