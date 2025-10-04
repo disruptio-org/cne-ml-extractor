@@ -26,18 +26,18 @@ class ExtractHandler(SimpleHTTPRequestHandler):
         parsed_path = urlsplit(path).path
         pure_path = PurePosixPath(unquote(parsed_path))
 
-        resolved_path = BASE_DIR
-        for part in pure_path.parts:
-            if part in ("", "/"):
-                continue
-            resolved_path /= part
-
-        resolved_path = resolved_path.resolve()
-
         try:
-            resolved_path.relative_to(BASE_DIR)
-        except ValueError as exc:  # pragma: no cover - documented for clarity
-            raise PermissionError("Attempted access outside of BASE_DIR") from exc
+            # Strip any leading slash to avoid ``Path`` treating the join as
+            # absolute. ``relative_to`` is only attempted when the path is
+            # rooted to keep compatibility with plain relative requests.
+            pure_path = pure_path.relative_to("/")
+        except ValueError:
+            pass
+
+        resolved_path = (BASE_DIR / pure_path).resolve()
+
+        if not resolved_path.is_relative_to(BASE_DIR):
+            raise PermissionError("Attempted access outside of BASE_DIR")
 
         if resolved_path.is_dir():
             index_candidate = resolved_path / INDEX_FILE.name
