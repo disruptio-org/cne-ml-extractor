@@ -133,6 +133,43 @@ def test_process_pdf_to_csv_fallback_sigla_without_hyphen(tmp_path, monkeypatch)
     assert rows[1][7] == "Ana Dias"
 
 
+def test_process_pdf_to_csv_handles_lista_single_letter(tmp_path, monkeypatch):
+    pages = [[
+        "Lista A",
+        "1 João Silva",
+        "2 Maria Costa",
+    ]]
+
+    class DummyML:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def classify_line(self, line):
+            upper = line.upper()
+            if "LISTA" in upper:
+                return "HEADER_LISTA", 0.95
+            if pipeline_ml.LINE_NUM.match(line):
+                return "CANDIDATO", 0.95
+            return "OUTRO", 0.1
+
+        def extract_nome(self, line):
+            return line.split(" ", 1)[1]
+
+    monkeypatch.setattr(pipeline_ml, "pdf_to_lines", lambda path: pages)
+    monkeypatch.setattr(pipeline_ml, "MLExtractor", DummyML)
+
+    output_path = pipeline_ml.process_pdf_to_csv(
+        "dummy.pdf", "DTMNFR", str(tmp_path / "results.csv")
+    )
+
+    with Path(output_path).open(encoding="utf-8-sig", newline="") as f:
+        reader = csv.reader(f, delimiter=";")
+        rows = list(reader)
+
+    assert rows[1][3] == "A"
+    assert rows[2][3] == "A"
+
+
 def test_process_pdf_to_csv_handles_mixed_orgao_pages(tmp_path, monkeypatch):
     pages = [[
         "1. Assembleia Municipal",

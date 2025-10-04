@@ -17,9 +17,16 @@ LINE_NUM      = re.compile(r"^\s*(\d+)[\.\-ºo]?\s+(.+?)\s*$")
 
 _SIGLA_TOKEN = r"[A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9]{2,}"
 _SIGLA_PART = rf"{_SIGLA_TOKEN}(?:[/-]{_SIGLA_TOKEN})*"
+_SIGLA_LISTA = re.compile(r"\bLISTA\s+([A-Z0-9])\b", re.I)
 _SIGLA_BEFORE_LISTA = re.compile(rf"\b({_SIGLA_PART})\b(?=\s*-\s*LISTA)", re.I)
 _SIGLA_BEFORE_HYPHEN = re.compile(rf"\b({_SIGLA_PART})\b(?=\s*-\s*)")
 _SIGLA_GENERIC = re.compile(rf"\b({_SIGLA_PART})\b")
+
+
+def sigla_from_lista(line: str) -> Optional[str]:
+    """Extract single-letter siglas that appear after the word LISTA."""
+    m = _SIGLA_LISTA.search(line.upper())
+    return m.group(1) if m else None
 
 def normalize_quotes_dashes(s: str) -> str:
     return (s.replace("–","-").replace("—","-")
@@ -34,6 +41,10 @@ def guess_sigla(line: str) -> Optional[str]:
         m = pattern.search(upper_line)
         if m:
             return m.group(1)
+
+    lista_sigla = sigla_from_lista(line)
+    if lista_sigla:
+        return lista_sigla
 
     stopwords = {"DE", "DA", "DO", "DAS", "DOS", "E", "LISTA", "LISTAS"}
 
