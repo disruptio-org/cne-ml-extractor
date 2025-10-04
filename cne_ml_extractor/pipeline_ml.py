@@ -7,7 +7,8 @@ from .ml_infer import MLExtractor
 PARTY_HINT = re.compile(r"\b(PSD|CDS|PS|CHEGA|IL|VOLT|CDU|PAN|BLOCO|LIVRE|COLIGA|ALIAN[ÇC]A)\b", re.I)
 
 def ensure_dir(path: str):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    dir_path = os.path.dirname(path)
+    os.makedirs(dir_path or ".", exist_ok=True)
 
 def process_pdf_to_csv(pdf_path: str, dtmnfr: str, out_csv: str,
                        line_model_dir: str = "models/line-cls-xlmr",
