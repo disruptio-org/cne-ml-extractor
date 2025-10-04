@@ -14,9 +14,13 @@ from cne_ml_extractor.pipeline_ml import process_pdf_to_csv
 
 pdf, dtmnfr, csv_out = sys.argv[1:4]
 csv_path = process_pdf_to_csv(pdf, dtmnfr=dtmnfr, out_csv=csv_out)
-print("CSV:", csv_path)
+print('CSV:', csv_path)
 '@
 
 python -c $script -- "$Pdf" "$Dtmnfr" "$CsvOut"
+
+if ($LASTEXITCODE -ne 0) {
+  throw "Python retornou o código de saída $LASTEXITCODE"
+}
 
 Write-Host "✅ CSV em $CsvOut"
