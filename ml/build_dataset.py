@@ -1,13 +1,18 @@
 from __future__ import annotations
-import os, re, csv
-from cne_ml_extractor.utils import pdf_to_lines, SEC_EFETIVOS, SEC_SUPLENTES, LINE_NUM, normalize_quotes_dashes
+import os, csv
+from cne_ml_extractor.utils import (
+    pdf_to_lines,
+    SEC_EFETIVOS,
+    SEC_SUPLENTES,
+    LINE_NUM,
+    normalize_quotes_dashes,
+    guess_sigla,
+)
 
 IN_ROOT = './samples'
 OUT_DIR = './data'
 os.makedirs(os.path.join(OUT_DIR,'line_cls'), exist_ok=True)
 os.makedirs(os.path.join(OUT_DIR,'ner'), exist_ok=True)
-
-PARTY_HINT = re.compile(r"\b(PSD|CDS|PS|CHEGA|IL|VOLT|CDU|PAN|BLOCO|LIVRE|COLIGA|ALIAN[ÇC]A)\b", re.I)
 
 def main():
     line_csv = os.path.join(OUT_DIR, 'line_cls', 'all_lines.csv')
@@ -28,7 +33,8 @@ def main():
                         w_line.writerow([line,'SECAO']); continue
                     if SEC_SUPLENTES.search(line):
                         w_line.writerow([line,'SECAO']); continue
-                    if PARTY_HINT.search(line) and '-' in line:
+                    sigla_hint = guess_sigla(line)
+                    if sigla_hint and ("-" in line or "LISTA" in line.upper()):
                         w_line.writerow([line,'HEADER_LISTA']); continue
                     if LINE_NUM.match(line):
                         w_line.writerow([line,'CANDIDATO'])
