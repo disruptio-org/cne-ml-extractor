@@ -1,10 +1,15 @@
 from __future__ import annotations
 import os, csv, re
 from typing import Optional, List
-from .utils import pdf_to_lines, SEC_EFETIVOS, SEC_SUPLENTES, LINE_NUM, normalize_quotes_dashes
+from .utils import (
+    pdf_to_lines,
+    SEC_EFETIVOS,
+    SEC_SUPLENTES,
+    LINE_NUM,
+    normalize_quotes_dashes,
+    guess_sigla,
+)
 from .ml_infer import MLExtractor
-
-PARTY_HINT = re.compile(r"\b(PSD|CDS|PS|CHEGA|IL|VOLT|CDU|PAN|BLOCO|LIVRE|COLIGA|ALIAN[ÇC]A)\b", re.I)
 
 def ensure_dir(path: str):
     dir_path = os.path.dirname(path)
@@ -47,8 +52,8 @@ def process_pdf_to_csv(pdf_path: str, dtmnfr: str, out_csv: str,
             # header de lista
             if lbl == "HEADER_LISTA" and prob >= 0.55:
                 current_nome_lista = line
-                m = PARTY_HINT.search(line)
-                current_sigla = (m.group(1) if m else "").upper() if m else ""
+                sigla = guess_sigla(line)
+                current_sigla = sigla or ""
                 seq_in_list = 0
                 in_section = None
                 continue
@@ -69,10 +74,10 @@ def process_pdf_to_csv(pdf_path: str, dtmnfr: str, out_csv: str,
             # fallbacks
             if SEC_EFETIVOS.search(line): in_section="EFETIVOS"; seq_in_list=0; continue
             if SEC_SUPLENTES.search(line): in_section="SUPLENTES"; seq_in_list=0; continue
-            if PARTY_HINT.search(line) and "-" in line:
+            sigla_hint = guess_sigla(line)
+            if sigla_hint and ("-" in line or "LISTA" in line.upper()):
                 current_nome_lista = line
-                m = PARTY_HINT.search(line)
-                current_sigla = (m.group(1) if m else "").upper()
+                current_sigla = sigla_hint
                 seq_in_list = 0; in_section=None; continue
 
             m = LINE_NUM.match(line)
