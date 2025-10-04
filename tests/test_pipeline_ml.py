@@ -96,6 +96,45 @@ def test_process_pdf_to_csv_exports_candidates_with_generic_sigla(tmp_path, monk
     assert rows[2][6] == "2"
 
 
+def test_process_pdf_to_csv_handles_ordinais(tmp_path, monkeypatch):
+    pages = [[
+        "XYZ - Lista de Cidadãos",
+        "1.º Nome Apelido",
+        "2º. Outro Nome",
+    ]]
+
+    class DummyML:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def classify_line(self, line):
+            upper = line.upper()
+            if "LISTA" in upper:
+                return "HEADER_LISTA", 0.95
+            if line.startswith("1"):
+                return "CANDIDATO", 0.95
+            return "OUTRO", 0.1
+
+        def extract_nome(self, line):
+            return line  # return original line to force ordinal stripping
+
+    monkeypatch.setattr(pipeline_ml, "pdf_to_lines", lambda path: pages)
+    monkeypatch.setattr(pipeline_ml, "MLExtractor", DummyML)
+
+    output_path = pipeline_ml.process_pdf_to_csv(
+        "dummy.pdf", "DTMNFR", str(tmp_path / "results.csv")
+    )
+
+    with Path(output_path).open(encoding="utf-8-sig", newline="") as f:
+        reader = csv.reader(f, delimiter=";")
+        rows = list(reader)
+
+    assert rows[1][7] == "Nome Apelido"
+    assert rows[1][6] == "1"
+    assert rows[2][7] == "Outro Nome"
+    assert rows[2][6] == "2"
+
+
 def test_process_pdf_to_csv_fallback_sigla_without_hyphen(tmp_path, monkeypatch):
     pages = [[
         "MOVIMENTO LIVRE LISTA UNICA",
