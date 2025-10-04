@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cne-ml-extractor"
+version = "0.1.0"
+description = "On-prem ML extractor for Portuguese municipal election editais (AM/CM)."
+authors = [{name = "CNE Team"}]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["black", "ruff"]

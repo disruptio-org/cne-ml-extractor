@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+data/
+models/
+outputs/
+*.pt
+*.bin
+*.onnx
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
