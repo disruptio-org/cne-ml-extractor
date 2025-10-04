@@ -8,6 +8,7 @@ from .utils import (
     LINE_NUM,
     normalize_quotes_dashes,
     guess_sigla,
+    sigla_from_lista,
 )
 from .ml_infer import MLExtractor
 
@@ -57,6 +58,8 @@ def process_pdf_to_csv(pdf_path: str, dtmnfr: str, out_csv: str,
             if lbl == "HEADER_LISTA" and prob >= 0.55:
                 current_nome_lista = line
                 sigla = guess_sigla(line)
+                if sigla is None:
+                    sigla = sigla_from_lista(line)
                 current_sigla = sigla or ""
                 seq_in_list = 0
                 in_section = None
@@ -78,7 +81,7 @@ def process_pdf_to_csv(pdf_path: str, dtmnfr: str, out_csv: str,
             # fallbacks
             if SEC_EFETIVOS.search(line): in_section="EFETIVOS"; seq_in_list=0; continue
             if SEC_SUPLENTES.search(line): in_section="SUPLENTES"; seq_in_list=0; continue
-            sigla_hint = guess_sigla(line)
+            sigla_hint = guess_sigla(line) or sigla_from_lista(line)
             if sigla_hint and ("-" in line or "LISTA" in line.upper()):
                 current_nome_lista = line
                 current_sigla = sigla_hint
