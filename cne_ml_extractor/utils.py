@@ -1,12 +1,20 @@
 from __future__ import annotations
 import fitz, re
+from io import BytesIO
 from typing import List, Optional
+
+from PIL import Image
+import pytesseract
 
 def pdf_to_lines(pdf_path: str) -> list[list[str]]:
     pages = []
     with fitz.open(pdf_path) as doc:
         for page in doc:
             txt = page.get_text("text") or ""
+            if not txt.strip():
+                pixmap = page.get_pixmap()
+                image = Image.open(BytesIO(pixmap.tobytes("png")))
+                txt = pytesseract.image_to_string(image, lang="por") or ""
             lines = [ln.strip() for ln in txt.splitlines() if ln.strip()]
             pages.append(lines)
     return pages
