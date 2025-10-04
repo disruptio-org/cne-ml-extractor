@@ -32,13 +32,17 @@ def process_pdf_to_csv(pdf_path: str, dtmnfr: str, out_csv: str,
     header = ["DTMNFR","ORGAO","TIPO","SIGLA","SIMBOLO","NOME_LISTA","NUM_ORDEM","NOME_CANDIDATO","PARTIDO_PROPONENTE","INDEPENDENTE"]
 
     for page_idx, lines in enumerate(pages):
-        joined = " \n ".join(lines).upper()
-        if re.search(r"\b2\.\s*C[ÂA]MARA\s+MUNICIPAL\b", joined, re.I):
-            orgao = "CM"
-
         for raw in lines:
             line = normalize_quotes_dashes(raw.strip())
             if not line:
+                continue
+
+            upper_line = line.upper()
+            if re.search(r"\b1\.\s*ASSEMBLEIA\s+MUNICIPAL\b", upper_line, re.I):
+                orgao = "AM"
+                continue
+            if re.search(r"\b2\.\s*C[ÂA]MARA\s+MUNICIPAL\b", upper_line, re.I):
+                orgao = "CM"
                 continue
             lbl, prob = ml.classify_line(line)
 
