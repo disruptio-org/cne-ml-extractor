@@ -1,17 +1,41 @@
+<#
+.SYNOPSIS
+Executa o pipeline de inferência de edital em modo batch.
+
+.DESCRIPTION
+Prepara as pastas de trabalho, converte o DOCX para PDF quando disponível e
+executa a inferência ML para gerar o CSV final.
+
+.EXAMPLE
+PS> .\scripts\run_lote.ps1 -Municipio "Odivelas"
+
+Executa o fluxo padrão utilizando os diretórios derivados de
+".\samples\Odivelas".
+
+.EXAMPLE
+PS> .\scripts\run_lote.ps1 -InputDir '.\samples\editais\input' -OutputDir '.\samples\editais\output' -PdfPath '.\samples\editais\input\1116_Odivelas_AM e CM 28637.pdf' -Dtmnfr "111600"
+
+Executa a inferência diretamente sobre o PDF indicado, escrevendo o CSV em
+".\samples\editais\output".
+#>
+
 param(
   [string]$Municipio = "Odivelas",
   [string]$Dtmnfr    = "111600",
-  [string]$DocxPath  = ".\samples\$Municipio\input\edital.docx"
+  [string]$DocxPath  = ".\samples\$Municipio\input\edital.docx",
+  [string]$InputDir,
+  [string]$OutputDir,
+  [string]$PdfPath
 )
 
 $ErrorActionPreference = "Stop"
 $base   = ".\samples\$Municipio"
-$inDir  = Join-Path $base "input"
-$outDir = Join-Path $base "output"
+$inDir  = if ($InputDir) { $InputDir } else { Join-Path $base "input" }
+$outDir = if ($OutputDir) { $OutputDir } else { Join-Path $base "output" }
 New-Item -Force -ItemType Directory $inDir,$outDir | Out-Null
 
 # DOCX -> PDF (opcional)
-if (Test-Path $DocxPath) {
+if (-not $PdfPath -and Test-Path $DocxPath) {
   pip show docx2pdf | Out-Null 2>$null; if ($LASTEXITCODE -ne 0) { pip install -U docx2pdf }
   $PdfPath = Join-Path $inDir "$Municipio.pdf"
   $docxScript = @'
@@ -33,7 +57,17 @@ nome_lista: null
 "@ | Set-Content -Encoding UTF8 (Join-Path $base "ALL_context.yaml")
 
 # Inferência ML
-$PdfToUse = (Get-ChildItem $inDir -Filter *.pdf | Select-Object -First 1).FullName
+$PdfToUse = $null
+if ($PdfPath -and (Test-Path $PdfPath)) {
+  $PdfToUse = (Resolve-Path $PdfPath).Path
+} elseif ($PdfPath) {
+  Write-Warning "PDF '$PdfPath' não encontrado; procurando em $inDir."
+}
+
+if (-not $PdfToUse) {
+  $PdfToUse = (Get-ChildItem $inDir -Filter *.pdf | Select-Object -First 1).FullName
+}
+
 if (-not $PdfToUse) { throw "Nenhum PDF encontrado em $inDir" }
 
 $CsvOut = Join-Path $outDir "$Municipio" + "_AM_CM_final.csv"
