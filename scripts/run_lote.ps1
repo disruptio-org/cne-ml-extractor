@@ -14,10 +14,13 @@ New-Item -Force -ItemType Directory $inDir,$outDir | Out-Null
 if (Test-Path $DocxPath) {
   pip show docx2pdf | Out-Null 2>$null; if ($LASTEXITCODE -ne 0) { pip install -U docx2pdf }
   $PdfPath = Join-Path $inDir "$Municipio.pdf"
-  python - <<PY
+  $docxScript = @'
+import sys
 from docx2pdf import convert
-convert(r"""$DocxPath""", r"""$PdfPath""")
-PY
+
+convert(sys.argv[1], sys.argv[2])
+'@
+  python -c $docxScript -- "$DocxPath" "$PdfPath"
 }
 
 # Contexto (referência DTMNFR)
@@ -34,10 +37,14 @@ $PdfToUse = (Get-ChildItem $inDir -Filter *.pdf | Select-Object -First 1).FullNa
 if (-not $PdfToUse) { throw "Nenhum PDF encontrado em $inDir" }
 
 $CsvOut = Join-Path $outDir "$Municipio" + "_AM_CM_final.csv"
-python - <<PY
+$mlScript = @'
+import sys
 from cne_ml_extractor.pipeline_ml import process_pdf_to_csv
-csv_path = process_pdf_to_csv(r"""$PdfToUse""", dtmnfr=r"""$Dtmnfr""", out_csv=r"""$CsvOut""")
+
+pdf_path, dtmnfr, csv_out = sys.argv[1:4]
+csv_path = process_pdf_to_csv(pdf_path, dtmnfr=dtmnfr, out_csv=csv_out)
 print("CSV:", csv_path)
-PY
+'@
+python -c $mlScript -- "$PdfToUse" "$Dtmnfr" "$CsvOut"
 
 Write-Host "✅ CSV em $CsvOut"
