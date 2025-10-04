@@ -27,12 +27,26 @@ class MLExtractor:
         if not words:
             return None
         with torch.no_grad():
-            enc = self.tok_ner(words, is_split_into_words=True, return_tensors="pt", truncation=True).to(self.dev)
+            enc = self.tok_ner(
+                words,
+                is_split_into_words=True,
+                return_tensors="pt",
+                truncation=True,
+            ).to(self.dev)
             logits = self.m_ner(**enc).logits[0].cpu()
-            ids = logits.argmax(-1).tolist()
+            word_ids = enc.word_ids()
             id2label = self.m_ner.config.id2label
-            tags = [id2label.get(i, "O") for i in ids]
-        tags = tags[1:len(words)+1]
+
+        tags = []
+        seen_word_idx = set()
+        for idx, word_idx in enumerate(word_ids):
+            if word_idx is None or word_idx in seen_word_idx:
+                continue
+            seen_word_idx.add(word_idx)
+            tag_id = int(logits[idx].argmax().item())
+            tags.append(id2label.get(tag_id, "O"))
+
+        tags = tags[: len(words)]
         nome_tokens = []
         collecting = False
         for w, t in zip(words, tags):
